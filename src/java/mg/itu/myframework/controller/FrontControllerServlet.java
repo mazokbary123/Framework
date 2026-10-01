@@ -13,6 +13,7 @@ import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.model.MethodClassMapping;
 import mg.itu.myframework.model.UrlMethod;
 import mg.itu.myframework.model.ModelAndView;
+
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -67,6 +68,7 @@ public class FrontControllerServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         processRequest(req, res);
     }
+
 
     private void processRequest(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
