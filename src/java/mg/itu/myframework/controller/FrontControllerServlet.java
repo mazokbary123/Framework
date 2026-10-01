@@ -1,10 +1,13 @@
 package mg.itu.myframework.controller;
 
 import java.io.*;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
+
+import org.springframework.context.ApplicationContext;
 
 import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.model.MethodClassMapping;
@@ -21,7 +24,7 @@ public class FrontControllerServlet extends HttpServlet {
     private Map<UrlMethod, MethodClassMapping> listUrlMapping = new HashMap<>();
     private String prefix;
     private String suffix;
-    private Object springContext;
+    private ApplicationContext springContext;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -31,7 +34,7 @@ public class FrontControllerServlet extends HttpServlet {
 
             this.prefix = (String) context.getAttribute("prefix");
             this.suffix = (String) context.getAttribute("suffix");
-            this.springContext = context.getAttribute("springContext");
+            this.springContext = (ApplicationContext) context.getAttribute("springContext");
 
             List<String> controllersFromContext = (List<String>) context.getAttribute("listController");
             if (controllersFromContext != null) {
@@ -134,18 +137,14 @@ public class FrontControllerServlet extends HttpServlet {
         try {
             Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
 
-            Class<?>[] parameterTypes = mapping.getMethode().getParameterTypes();
+            Parameter[] parameters = mapping.getMethode().getParameters();  
             Object result;
 
-            if (parameterTypes.length == 0) {
+            if (parameters.length == 0) {
                 result = mapping.getMethode().invoke(instance);
-            } else if (parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(springContext.getClass())) {
-                result = mapping.getMethode().invoke(instance, springContext);
             } else {
-                out.println("La méthode " + mapping.getMethode().getName() +
-                        " de la classe " + mapping.getClasse().getName() +
-                        " a des paramètres non supportés.");
-                return;
+                Object[] args = getArgs(springContext, parameters, req);
+                result = mapping.getMethode().invoke(instance, args);
             }
             if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
 
@@ -182,5 +181,39 @@ public class FrontControllerServlet extends HttpServlet {
             e.printStackTrace();
             out.println("Erreur lors du traitement de la requête : " + e.getMessage());
         }
+    }
+
+    private Object[] getArgs(ApplicationContext springContext, Parameter[] parameters, HttpServletRequest req) {
+        List<Object> args = new ArrayList<>();
+        for (Parameter parameter : parameters) {
+            Class<?> parameterType = parameter.getType();
+
+            if (parameterType == ApplicationContext.class) {
+                args.add(springContext);
+                continue;
+            }
+            String parameterName = parameter.getName();
+            String parameterValue = req.getParameter(parameterName);
+            Object convertedValue = convertParameter(parameterValue, parameterType);
+
+            args.add(convertedValue);
+        }
+
+        return args.toArray();
+    }
+
+    private Object convertParameter(String value, Class<?> targetType) {
+        if (targetType == String.class) {
+            return value;
+        } else if (targetType == int.class || targetType == Integer.class) {
+            return Integer.parseInt(value);
+        } else if (targetType == long.class || targetType == Long.class) {
+            return Long.parseLong(value);
+        } else if (targetType == double.class || targetType == Double.class) {
+            return Double.parseDouble(value);
+        } else if (targetType == boolean.class || targetType == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        return null;
     }
 }
