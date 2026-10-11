@@ -16,6 +16,9 @@ import mg.itu.myframework.model.ModelAndView;
 
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mg.itu.myframework.annotation.ObjectArg;
+
+import mg.itu.myframework.util.BindingUtil;
 
 @Controller
 public class FrontControllerServlet extends HttpServlet {
@@ -183,37 +186,23 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
-    private Object[] getArgs(ApplicationContext springContext, Parameter[] parameters, HttpServletRequest req) {
-        List<Object> args = new ArrayList<>();
-        for (Parameter parameter : parameters) {
+    private Object[] getArgs(ApplicationContext springContext, Parameter[] parameters, HttpServletRequest req) throws Exception {
+        Object[] args = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
             Class<?> parameterType = parameter.getType();
 
             if (parameterType == ApplicationContext.class) {
-                args.add(springContext);
-                continue;
+                args[i] = springContext;
+            } else if (parameter.isAnnotationPresent(ObjectArg.class)) {
+                args[i] = BindingUtil.buildObject(parameter.getName(), parameterType, req);
+            } else {
+                String value = req.getParameter(parameter.getName());
+                args[i] = BindingUtil.convertParameter(value, parameterType);
             }
-            String parameterName = parameter.getName();
-            String parameterValue = req.getParameter(parameterName);
-            Object convertedValue = convertParameter(parameterValue, parameterType);
-
-            args.add(convertedValue);
         }
 
-        return args.toArray();
-    }
-
-    private Object convertParameter(String value, Class<?> targetType) {
-        if (targetType == String.class) {
-            return value;
-        } else if (targetType == int.class || targetType == Integer.class) {
-            return Integer.parseInt(value);
-        } else if (targetType == long.class || targetType == Long.class) {
-            return Long.parseLong(value);
-        } else if (targetType == double.class || targetType == Double.class) {
-            return Double.parseDouble(value);
-        } else if (targetType == boolean.class || targetType == Boolean.class) {
-            return Boolean.parseBoolean(value);
-        }
-        return null;
+        return args;
     }
 }
