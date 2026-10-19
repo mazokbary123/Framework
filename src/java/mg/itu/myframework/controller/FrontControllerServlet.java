@@ -5,6 +5,7 @@ import java.lang.reflect.Parameter;
 import java.util.*;
 
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.*;
 
 import org.springframework.context.ApplicationContext;
@@ -13,6 +14,7 @@ import mg.itu.myframework.annotation.Controller;
 import mg.itu.myframework.model.MethodClassMapping;
 import mg.itu.myframework.model.UrlMethod;
 import mg.itu.myframework.model.ModelAndView;
+import mg.itu.myframework.model.MapFile;
 
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,7 @@ import mg.itu.myframework.annotation.ObjectArg;
 import mg.itu.myframework.util.BindingUtil;
 
 @Controller
+@MultipartConfig
 public class FrontControllerServlet extends HttpServlet {
 
     private List<String> listController = new ArrayList<>();
@@ -186,6 +189,46 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
+    private MapFile toMapFile(Part part) throws IOException {
+        String fileName = part.getSubmittedFileName();
+        if (fileName == null || fileName.isEmpty()) {
+            return null;
+        }
+        int dot = fileName.lastIndexOf('.');
+        String extension = dot >= 0 ? fileName.substring(dot + 1) : "";
+        try (InputStream in = part.getInputStream()) {
+            return new MapFile(fileName, in.readAllBytes(), extension);
+        }
+    }
+
+    private boolean isMultipart(HttpServletRequest req) {
+        String contentType = req.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith("multipart/");
+    }
+
+    private MapFile readFile(HttpServletRequest req, String name) throws IOException, ServletException {
+        if (!isMultipart(req)) {
+            return null;
+        }
+        Part part = req.getPart(name);
+        return part == null ? null : toMapFile(part);
+    }
+
+    private MapFile[] readFiles(HttpServletRequest req, String name) throws IOException, ServletException {
+        List<MapFile> files = new ArrayList<>();
+        if (isMultipart(req)) {
+            for (Part part : req.getParts()) {
+                if (part.getName().equals(name)) {
+                    MapFile file = toMapFile(part);
+                    if (file != null) {
+                        files.add(file);
+                    }
+                }
+            }
+        }
+        return files.toArray(new MapFile[0]);
+    }
+
     private Object[] getArgs(ApplicationContext springContext, Parameter[] parameters, HttpServletRequest req) throws Exception {
         Object[] args = new Object[parameters.length];
 
@@ -195,6 +238,10 @@ public class FrontControllerServlet extends HttpServlet {
 
             if (parameterType == ApplicationContext.class) {
                 args[i] = springContext;
+            } else if (parameterType == MapFile.class) {
+                args[i] = readFile(req, parameter.getName());
+            } else if (parameterType == MapFile[].class) {
+                args[i] = readFiles(req, parameter.getName());
             } else if (parameter.isAnnotationPresent(ObjectArg.class)) {
                 args[i] = BindingUtil.buildObject(parameter.getName(), parameterType, req);
             } else {
