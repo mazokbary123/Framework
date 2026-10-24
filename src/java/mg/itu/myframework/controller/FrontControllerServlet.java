@@ -17,6 +17,7 @@ import mg.itu.myframework.model.ModelAndView;
 import mg.itu.myframework.model.MapFile;
 import mg.itu.myframework.model.MapSession;
 import mg.itu.myframework.util.SessionUtil;
+import mg.itu.myframework.util.AuthUtil;
 
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -141,6 +142,12 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     private void invokeMethod(MethodClassMapping mapping, HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        int authStatus = AuthUtil.check(req, mapping.getClasse(), mapping.getMethode());
+        if (authStatus != AuthUtil.AUTHORIZED) {
+            res.sendError(authStatus);
+            return;
+        }
+
         PrintWriter out = res.getWriter();
         try {
             Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
