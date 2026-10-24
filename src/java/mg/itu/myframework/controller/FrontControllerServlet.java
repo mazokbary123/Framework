@@ -15,6 +15,8 @@ import mg.itu.myframework.model.MethodClassMapping;
 import mg.itu.myframework.model.UrlMethod;
 import mg.itu.myframework.model.ModelAndView;
 import mg.itu.myframework.model.MapFile;
+import mg.itu.myframework.model.MapSession;
+import mg.itu.myframework.util.SessionUtil;
 
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -151,6 +153,9 @@ public class FrontControllerServlet extends HttpServlet {
             } else {
                 Object[] args = getArgs(springContext, parameters, req);
                 result = mapping.getMethode().invoke(instance, args);
+                if (SessionUtil.verifyMapSessionObject(req, args)) {
+                    SessionUtil.rectifySession(req, SessionUtil.getMapSessionContext(req));
+                }
             }
             if (mapping.getMethode().isAnnotationPresent(WebApi.class)) {
 
@@ -238,6 +243,9 @@ public class FrontControllerServlet extends HttpServlet {
 
             if (parameterType == ApplicationContext.class) {
                 args[i] = springContext;
+            } else if (parameterType == MapSession.class) {
+                SessionUtil.setMapSession(req, SessionUtil.getMapSessionContext(req));
+                args[i] = SessionUtil.getMapSessionContext(req);
             } else if (parameterType == MapFile.class) {
                 args[i] = readFile(req, parameter.getName());
             } else if (parameterType == MapFile[].class) {
