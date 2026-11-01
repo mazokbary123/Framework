@@ -18,6 +18,7 @@ import mg.itu.myframework.model.MapFile;
 import mg.itu.myframework.model.MapSession;
 import mg.itu.myframework.util.SessionUtil;
 import mg.itu.myframework.util.AuthUtil;
+import mg.itu.myframework.util.ControllerUtil;
 
 import mg.itu.myframework.annotation.WebApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -153,7 +154,7 @@ public class FrontControllerServlet extends HttpServlet {
 
         PrintWriter out = res.getWriter();
         try {
-            Object instance = mapping.getClasse().getDeclaredConstructor().newInstance();
+            Object instance = ControllerUtil.getInstance(mapping, req);
 
             Parameter[] parameters = mapping.getMethode().getParameters();  
             Object result;
