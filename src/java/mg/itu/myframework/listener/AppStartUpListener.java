@@ -28,6 +28,8 @@ public class AppStartUpListener implements ServletContextListener {
             String packageName = context.getInitParameter("packageNames");
             String prefix = context.getInitParameter("prefix");
             String suffix = context.getInitParameter("suffix");
+            String sessionAuth = context.getInitParameter("sessionAuth");
+            String roleAuth = context.getInitParameter("roleAuth");
 
             if (packageName == null || packageName.trim().isEmpty()) {
                 throw new RuntimeException(
@@ -53,6 +55,8 @@ public class AppStartUpListener implements ServletContextListener {
             context.setAttribute("prefix", prefix);
             context.setAttribute("suffix", suffix);
             context.setAttribute("springContext", springContext);
+            context.setAttribute("sessionAuth", sessionAuth);
+            context.setAttribute("roleAuth", roleAuth);
 
             System.out.println("Framework initialisé.");
             System.out.println("-----------------------------------------");
