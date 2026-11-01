@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface Auth {
-    // Roles autorises. Vide : il suffit d'etre authentifie.
-    String[] roles() default {};
+    // Roles autorises separes par des virgules (ex : "admin,manager").
+    // Vide : il suffit d'etre authentifie.
+    String role() default "";
 }

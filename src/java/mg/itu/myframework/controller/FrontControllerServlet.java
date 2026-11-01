@@ -144,7 +144,10 @@ public class FrontControllerServlet extends HttpServlet {
     private void invokeMethod(MethodClassMapping mapping, HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         int authStatus = AuthUtil.check(req, mapping.getClasse(), mapping.getMethode());
         if (authStatus != AuthUtil.AUTHORIZED) {
-            res.sendError(authStatus);
+            res.setStatus(authStatus);
+            res.setContentType("text/html");
+            res.setCharacterEncoding("UTF-8");
+            res.getWriter().println("<p>" + AuthUtil.getMessage(authStatus) + "</p>");
             return;
         }
 
